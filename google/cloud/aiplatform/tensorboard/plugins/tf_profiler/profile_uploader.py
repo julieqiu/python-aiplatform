@@ -31,8 +31,7 @@ from typing import (
 )
 
 import grpc
-from tensorboard.uploader import upload_tracker
-from tensorboard.uploader import util
+from google.cloud.aiplatform.tensorboard import upload_tracker
 from tensorboard.uploader.proto import server_info_pb2
 from tensorboard.util import tb_logging
 import tensorflow as tf
@@ -73,7 +72,7 @@ class ProfileRequestSender(uploader_utils.RequestSender):
         experiment_resource_name: str,
         api: TensorboardServiceClient,
         upload_limits: server_info_pb2.UploadLimits,
-        blob_rpc_rate_limiter: util.RateLimiter,
+        blob_rpc_rate_limiter: uploader_utils.RateLimiter,
         blob_storage_bucket: storage.Bucket,
         blob_storage_folder: str,
         tracker: upload_tracker.UploadTracker,
@@ -90,7 +89,7 @@ class ProfileRequestSender(uploader_utils.RequestSender):
                 Required. Tensorboard service stub used to interact with experiment resource.
             upload_limits (server_info_pb2.UploadLimits):
                 Required. Upload limits for for api calls.
-            blob_rpc_rate_limiter (util.RateLimiter):
+            blob_rpc_rate_limiter (uploader_utils.RateLimiter):
                 Required. A `RateLimiter` to use to limit write RPC frequency.
                 Note this limit applies at the level of single RPCs in the Scalar and
                 Tensor case, but at the level of an entire blob upload in the Blob
@@ -314,7 +313,7 @@ class _FileRequestSender(object):
         self,
         run_resource_id: str,
         api: TensorboardServiceClient,
-        rpc_rate_limiter: util.RateLimiter,
+        rpc_rate_limiter: uploader_utils.RateLimiter,
         max_blob_request_size: int,
         max_blob_size: int,
         blob_storage_bucket: storage.Bucket,
@@ -330,7 +329,7 @@ class _FileRequestSender(object):
                     projects/{project}/locations/{location}/tensorboards/{tensorboard}/experiments/{experiment}/runs/{run}
             api (TensorboardServiceClient):
                 Required. TensorboardServiceStub for calling various tensorboard services.
-            rpc_rate_limiter (util.RateLimiter):
+            rpc_rate_limiter (uploader_utils.RateLimiter):
                 Required. A `RateLimiter` to use to limit write RPC frequency.
                 Note this limit applies at the level of single RPCs in the Scalar and
                 Tensor case, but at the level of an entire blob upload in the Blob
