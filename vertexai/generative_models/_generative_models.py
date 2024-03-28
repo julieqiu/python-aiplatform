@@ -640,28 +640,40 @@ def _validate_response(
     response: "GenerationResponse",
     request_contents: Optional[List["Content"]] = None,
     response_chunks: Optional[List["GenerationResponse"]] = None,
+    is_chat_session: bool = True,
 ) -> None:
     message = ""
-    if not response.candidates:
+    if response._raw_response.prompt_feedback and not response.candidates:
         message += (
             f"The model response was blocked due to {response._raw_response.prompt_feedback.block_reason}.\n"
-            f"Blocke reason message: {response._raw_response.prompt_feedback.block_reason_message}.\n"
+            f"Block reason message: {response._raw_response.prompt_feedback.block_reason_message}.\n"
         )
     else:
         candidate = response.candidates[0]
         if candidate.finish_reason not in _SUCCESSFUL_FINISH_REASONS:
+            if (
+                candidate.finish_reason == FinishReason.OTHER
+                and not candidate.finish_message
+            ):
+                # `FinishReason.OTHER` is only used for language filtering,
+                # but no `finish_message` is added from the API.
+                candidate.finish_message = (
+                    "The response was blocked due to using an unsupported language."
+                    "Refer to https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models#language-support for the list of supported languages."
+                )
             message = (
-                "The model response did not completed successfully.\n"
-                f"Finish reason: {candidate.finish_reason}.\n"
-                f"Finish message: {candidate.finish_message}.\n"
-                f"Safety ratings: {candidate.safety_ratings}.\n"
+                "The model response did not complete successfully.\n"
+                f"Finish reason: {candidate.finish_reason.name}\n"
+                f"Finish message: {candidate.finish_message}\n"
+                f"Safety ratings: {candidate.safety_ratings}\n"
             )
     if message:
-        message += (
-            "To protect the integrity of the chat session, the request and response were not added to chat history.\n"
-            "To skip the response validation, specify `model.start_chat(response_validation=False)`.\n"
-            "Note that letting blocked or otherwise incomplete responses into chat history might lead to future interactions being blocked by the service."
-        )
+        if is_chat_session:
+            message += (
+                "To protect the integrity of the chat session, the request and response were not added to chat history.\n"
+                "To skip the response validation, specify `model.start_chat(response_validation=False)`.\n"
+                "Note that letting blocked or otherwise incomplete responses into chat history might lead to future interactions being blocked by the service."
+            )
         raise ResponseValidationError(
             message=message,
             request_contents=request_contents,
@@ -1431,9 +1443,13 @@ class CallableFunctionDeclaration(FunctionDeclaration):
         Returns:
             CallableFunctionDeclaration.
         """
-        from vertexai.generative_models import _function_calling_utils
+        from vertexai.generative_models import (
+            _function_calling_utils,
+        )
 
-        function_schema = _function_calling_utils.generate_json_schema_from_function(func)
+        function_schema = _function_calling_utils.generate_json_schema_from_function(
+            func
+        )
         # Getting out the description first since it will be removed from the schema.
         function_description = function_schema["description"]
         function_schema = (
@@ -1493,6 +1509,7 @@ class GenerationResponse:
                 "The response has multiple candidates."
                 " Use `response.candidate[i].text` to get text of a particular candidate."
             )
+        _validate_response(self, is_chat_session=False)
         if not self.candidates:
             raise ValueError("Response has no candidates (and no text).")
         return self.candidates[0].text
