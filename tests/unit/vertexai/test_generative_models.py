@@ -505,7 +505,13 @@ class TestGenerativeModels:
         attribute="generate_content",
         new=mock_generate_content,
     )
-    def test_generate_content_grounding_google_search_retriever(self):
+    @pytest.mark.parametrize(
+        "generative_models",
+        [generative_models, preview_generative_models],
+    )
+    def test_generate_content_grounding_google_search_retriever(
+        self, generative_models: generative_models
+    ):
         model = preview_generative_models.GenerativeModel("gemini-pro")
         google_search_retriever_tool = (
             preview_generative_models.Tool.from_google_search_retrieval(
@@ -524,7 +530,13 @@ class TestGenerativeModels:
         attribute="generate_content",
         new=mock_generate_content,
     )
-    def test_generate_content_grounding_vertex_ai_search_retriever(self):
+    @pytest.mark.parametrize(
+        "generative_models",
+        [generative_models, preview_generative_models],
+    )
+    def test_generate_content_grounding_vertex_ai_search_retriever(
+        self, generative_models: generative_models
+    ):
         model = preview_generative_models.GenerativeModel("gemini-pro")
         google_search_retriever_tool = preview_generative_models.Tool.from_retrieval(
             retrieval=preview_generative_models.grounding.Retrieval(

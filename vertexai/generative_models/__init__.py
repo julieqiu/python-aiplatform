@@ -31,6 +31,7 @@ from vertexai.generative_models._generative_models import (
     Part,
     ResponseValidationError,
     Tool,
+    grounding,
 )
 
 __all__ = [
@@ -48,4 +49,5 @@ __all__ = [
     "Part",
     "ResponseValidationError",
     "Tool",
+    "grounding",
 ]
